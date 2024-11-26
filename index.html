@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Event Stream Demo</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #event-stream-data {
+            margin: 50px auto;
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="event-stream-data"></div>
+</body>
+
+<script>
+    const eventStreamDataElement = document.getElementById('event-stream-data');
+    function handleEventStreamMessage(event) {
+        console.log(event)
+        const eventText = event.data;
+        displayEvent(eventText);
+    }
+
+    function displayEvent(eventText) {
+        const eventElement = document.createElement('p');
+        eventElement.textContent = eventText;
+        eventStreamDataElement.appendChild(eventElement);
+    }
+
+    function connectToEventStream() {
+        fetch('http://127.0.0.1:8080/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: {
+                data: 'example'
+            }
+        })
+            .then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                return reader.read().then(function processResult(result) {
+                    // console.log(result)
+                    if (result.done) {
+                        return;
+                    }
+
+                    const chunk = decoder.decode(result.value, {
+                        stream: true
+                    });
+                    handleEventStreamMessage({
+                        data: chunk
+                    });
+
+                    return reader.read().then(processResult);
+                });
+            })
+            .catch(error => {
+                console.error('Error occurred while fetching event stream:', error);
+            });
+    }
+    connectToEventStream();
+</script>
+
+</html>

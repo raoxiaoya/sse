@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Event Stream Demo</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #event-stream-data {
+            margin: 50px auto;
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="event-stream-data"></div>
+</body>
+
+<script type="text/javascript">
+    const eventStreamDataElement = document.getElementById('event-stream-data');
+    function handleEventStreamMessage(event) {
+        console.log(event)
+        const eventText = event.data;
+        displayEvent(eventText);
+    }
+
+    function displayEvent(eventText) {
+        const eventElement = document.createElement('p');
+        eventElement.textContent = eventText;
+        eventStreamDataElement.appendChild(eventElement);
+    }
+
+    // 向后端服务器发起sse请求
+    const es = new EventSource("http://127.0.0.1:8080/stream");
+    // Event 和 Message 分开处理，需要显示的监听事件，否则不会处理事件
+    es.onmessage = function (e) {
+        handleEventStreamMessage(e);
+    }
+    // 监听事件流
+    es.addEventListener("start", (e) => {
+        handleEventStreamMessage(e);
+    });
+    es.addEventListener("end", (e) => {
+        handleEventStreamMessage(e);
+
+        // 一定要关闭连接，否则会一直轮训
+        es.close()
+    });
+    es.onerror = function (e) {
+        // readyState说明
+        // 0：浏览器与服务端尚未建立连接或连接已被关闭
+        // 1：浏览器与服务端已成功连接，浏览器正在处理接收到的事件及数据
+        // 2：浏览器与服务端建立连接失败，客户端不再继续建立与服务端之间的连接
+        console.log("readyState = " + e.currentTarget.readyState);
+    }
+</script>
+
+</html>
